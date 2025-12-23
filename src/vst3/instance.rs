@@ -35,6 +35,7 @@ pub struct Vst3Plugin {
 // 2. The plugin doesn't share mutable state with other instances
 // 3. VST3 plugins are designed to be movable between threads (host requirement)
 unsafe impl Send for Vst3Plugin {}
+unsafe impl Sync for Vst3Plugin {}
 
 // Note: Vst3Plugin is NOT Sync due to PhantomData<*const ()>
 // This is intentional - VST3 instances require synchronization for shared access
