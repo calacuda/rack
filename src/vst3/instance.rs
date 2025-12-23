@@ -1,4 +1,6 @@
-use crate::{Error, MidiEvent, MidiEventKind, ParameterInfo, PluginInfo, PluginInstance, PresetInfo, Result};
+use crate::{
+    Error, MidiEvent, MidiEventKind, ParameterInfo, PluginInfo, PluginInstance, PresetInfo, Result,
+};
 use smallvec::SmallVec;
 use std::ffi::CString;
 use std::marker::PhantomData;
@@ -42,7 +44,9 @@ impl Vst3Plugin {
     pub(crate) fn new(info: &PluginInfo) -> Result<Self> {
         unsafe {
             // Convert path to CString
-            let path_str = info.path.to_str()
+            let path_str = info
+                .path
+                .to_str()
                 .ok_or_else(|| Error::Other("Plugin path contains invalid UTF-8".to_string()))?;
             let path = CString::new(path_str)
                 .map_err(|_| Error::Other("Plugin path contains null byte".to_string()))?;
@@ -71,7 +75,6 @@ impl Vst3Plugin {
             })
         }
     }
-
 }
 
 impl Drop for Vst3Plugin {
@@ -100,7 +103,9 @@ impl PluginInstance for Vst3Plugin {
             let output_channels = ffi::rack_vst3_plugin_get_output_channels(self.inner.as_ptr());
 
             if input_channels < 0 || output_channels < 0 {
-                return Err(Error::Other("Failed to query channel configuration".to_string()));
+                return Err(Error::Other(
+                    "Failed to query channel configuration".to_string(),
+                ));
             }
 
             self.input_channels = input_channels as usize;
@@ -112,8 +117,10 @@ impl PluginInstance for Vst3Plugin {
             self.output_ptrs = Vec::with_capacity(self.output_channels.max(8));
 
             // Initialize with null pointers (will be filled in process())
-            self.input_ptrs.resize(self.input_channels, std::ptr::null());
-            self.output_ptrs.resize(self.output_channels, std::ptr::null_mut());
+            self.input_ptrs
+                .resize(self.input_channels, std::ptr::null());
+            self.output_ptrs
+                .resize(self.output_channels, std::ptr::null_mut());
 
             Ok(())
         }
@@ -145,22 +152,24 @@ impl PluginInstance for Vst3Plugin {
         if inputs.len() != self.input_channels {
             return Err(Error::Other(format!(
                 "Input channel count mismatch: plugin expects {}, got {}",
-                self.input_channels, inputs.len()
+                self.input_channels,
+                inputs.len()
             )));
         }
         if outputs.len() != self.output_channels {
             return Err(Error::Other(format!(
                 "Output channel count mismatch: plugin expects {}, got {}",
-                self.output_channels, outputs.len()
+                self.output_channels,
+                outputs.len()
             )));
         }
 
         // Defense-in-depth: Catch initialization bugs where channel counts are zero
         // This is technically redundant (covered by checks above) but guards against
         // future bugs in initialize() that could leave channels at zero
-        if inputs.is_empty() || outputs.is_empty() {
-            return Err(Error::Other("Empty input or output channels".to_string()));
-        }
+        // if inputs.is_empty() || outputs.is_empty() {
+        //     return Err(Error::Other("Empty input or output channels".to_string()));
+        // }
 
         // Validate all channels have the same length
         for (i, input) in inputs.iter().enumerate() {
@@ -322,16 +331,35 @@ impl PluginInstance for Vst3Plugin {
 
         // Convert Rust MIDI events to C MIDI events
         // Use SmallVec for zero-allocation in typical cases (≤16 events)
-        let mut c_events: SmallVec<[ffi::RackVST3MidiEvent; 16]> = SmallVec::with_capacity(events.len());
+        let mut c_events: SmallVec<[ffi::RackVST3MidiEvent; 16]> =
+            SmallVec::with_capacity(events.len());
 
         for event in events {
             let (status, data1, data2, channel) = match &event.kind {
-                MidiEventKind::NoteOn { note, velocity, channel } => (0x90, *note, *velocity, *channel),
-                MidiEventKind::NoteOff { note, velocity, channel } => (0x80, *note, *velocity, *channel),
-                MidiEventKind::PolyphonicAftertouch { note, pressure, channel } => (0xA0, *note, *pressure, *channel),
-                MidiEventKind::ControlChange { controller, value, channel } => (0xB0, *controller, *value, *channel),
+                MidiEventKind::NoteOn {
+                    note,
+                    velocity,
+                    channel,
+                } => (0x90, *note, *velocity, *channel),
+                MidiEventKind::NoteOff {
+                    note,
+                    velocity,
+                    channel,
+                } => (0x80, *note, *velocity, *channel),
+                MidiEventKind::PolyphonicAftertouch {
+                    note,
+                    pressure,
+                    channel,
+                } => (0xA0, *note, *pressure, *channel),
+                MidiEventKind::ControlChange {
+                    controller,
+                    value,
+                    channel,
+                } => (0xB0, *controller, *value, *channel),
                 MidiEventKind::ProgramChange { program, channel } => (0xC0, *program, 0, *channel),
-                MidiEventKind::ChannelAftertouch { pressure, channel } => (0xD0, *pressure, 0, *channel),
+                MidiEventKind::ChannelAftertouch { pressure, channel } => {
+                    (0xD0, *pressure, 0, *channel)
+                }
                 MidiEventKind::PitchBend { value, channel } => {
                     // Pitch bend is 14-bit (0-16383), centered at 8192
                     let lsb = (value & 0x7F) as u8;
@@ -340,8 +368,12 @@ impl PluginInstance for Vst3Plugin {
                 }
                 // System messages don't have a channel - skip them for now
                 // VST3 doesn't have a standard way to send system real-time messages
-                MidiEventKind::TimingClock | MidiEventKind::Start | MidiEventKind::Continue |
-                MidiEventKind::Stop | MidiEventKind::ActiveSensing | MidiEventKind::SystemReset => {
+                MidiEventKind::TimingClock
+                | MidiEventKind::Start
+                | MidiEventKind::Continue
+                | MidiEventKind::Stop
+                | MidiEventKind::ActiveSensing
+                | MidiEventKind::SystemReset => {
                     continue; // Skip system messages
                 }
             };
@@ -481,11 +513,8 @@ impl PluginInstance for Vst3Plugin {
         }
 
         unsafe {
-            let result = ffi::rack_vst3_plugin_set_state(
-                self.inner.as_ptr(),
-                data.as_ptr(),
-                data.len(),
-            );
+            let result =
+                ffi::rack_vst3_plugin_set_state(self.inner.as_ptr(), data.as_ptr(), data.len());
 
             if result != ffi::RACK_VST3_OK {
                 return Err(map_error(result));
@@ -517,7 +546,9 @@ mod tests {
         let plugins = scanner.scan()?;
 
         if plugins.is_empty() {
-            return Err(Error::Other("No VST3 plugins found for testing".to_string()));
+            return Err(Error::Other(
+                "No VST3 plugins found for testing".to_string(),
+            ));
         }
 
         Ok((scanner, plugins[0].clone()))
