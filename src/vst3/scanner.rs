@@ -88,7 +88,8 @@ impl Vst3Scanner {
     ///
     /// Returns an error if the path is invalid or cannot be added
     pub fn add_path(&mut self, path: &Path) -> Result<()> {
-        let path_str = path.to_str()
+        let path_str = path
+            .to_str()
             .ok_or_else(|| Error::Other("Path contains invalid UTF-8".to_string()))?;
 
         let path_cstr = CString::new(path_str)
@@ -173,6 +174,14 @@ fn convert_plugin_info(c_info: &ffi::RackVST3PluginInfo) -> Result<PluginInfo> {
         let manufacturer = c_array_to_string(&c_info.manufacturer, "manufacturer")?;
         let path_str = c_array_to_string(&c_info.path, "path")?;
         let unique_id = c_array_to_string(&c_info.unique_id, "unique_id")?;
+
+        // let name = c_array_to_string(&c_info.name.map(|usign| usign as i8), "plugin name")?;
+        // let manufacturer = c_array_to_string(
+        //     &c_info.manufacturer.map(|usign| usign as i8),
+        //     "manufacturer",
+        // )?;
+        // let path_str = c_array_to_string(&c_info.path.map(|usign| usign as i8), "path")?;
+        // let unique_id = c_array_to_string(&c_info.unique_id.map(|usign| usign as i8), "unique_id")?;
 
         // Convert plugin type
         let plugin_type = match c_info.plugin_type {
@@ -292,9 +301,18 @@ mod tests {
         if let Some(plugin) = plugins.first() {
             // Verify all fields are populated
             assert!(!plugin.name.is_empty(), "Plugin name should not be empty");
-            assert!(!plugin.manufacturer.is_empty(), "Manufacturer should not be empty");
-            assert!(!plugin.unique_id.is_empty(), "Unique ID should not be empty");
-            assert!(plugin.path.as_os_str().len() > 0, "Path should not be empty");
+            assert!(
+                !plugin.manufacturer.is_empty(),
+                "Manufacturer should not be empty"
+            );
+            assert!(
+                !plugin.unique_id.is_empty(),
+                "Unique ID should not be empty"
+            );
+            assert!(
+                plugin.path.as_os_str().len() > 0,
+                "Path should not be empty"
+            );
         }
     }
 
