@@ -2,7 +2,7 @@ use crate::{
     Error, MidiEvent, MidiEventKind, ParameterInfo, PluginInfo, PluginInstance, PresetInfo, Result,
 };
 use smallvec::SmallVec;
-use std::ffi::CString;
+use std::ffi::{c_char, CString};
 use std::marker::PhantomData;
 use std::ptr::NonNull;
 
@@ -239,8 +239,8 @@ impl PluginInstance for Vst3Plugin {
         }
 
         unsafe {
-            let mut name = vec![0i8; 256];
-            let mut unit = vec![0i8; 32];
+            let mut name = vec![0 as c_char; 256];
+            let mut unit = vec![0 as c_char; 32];
             let mut min = 0.0f32;
             let mut max = 0.0f32;
             let mut default_value = 0.0f32;
@@ -424,7 +424,7 @@ impl PluginInstance for Vst3Plugin {
         }
 
         unsafe {
-            let mut name = vec![0i8; 256];
+            let mut name = vec![0 as c_char; 256];
             let mut preset_number: i32 = 0;
 
             let result = ffi::rack_vst3_plugin_get_preset_info(

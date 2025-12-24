@@ -175,7 +175,7 @@ fn convert_plugin_info(c_info: &ffi::RackVST3PluginInfo) -> Result<PluginInfo> {
         let path_str = c_array_to_string(&c_info.path, "path")?;
         let unique_id = c_array_to_string(&c_info.unique_id, "unique_id")?;
 
-        // let name = c_array_to_string(&c_info.name.map(|usign| usign as i8), "plugin name")?;
+        // let name = c_array_to_string(&c_info.name.map(|usign| usign as c_char), "plugin name")?;
         // let manufacturer = c_array_to_string(
         //     &c_info.manufacturer.map(|usign| usign as i8),
         //     "manufacturer",
