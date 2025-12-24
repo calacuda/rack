@@ -194,6 +194,10 @@ pub trait PluginInstance: Send {
 
 This allows different plugin formats to implement the same interface, making your code portable across formats.
 
+## TODO
+
+- [ ] add `stepCount` and `isDiscrete` to RackVST3Plugin struct in both the cpp and rust
+
 ## Roadmap
 
 ### AudioUnit (macOS) - ✅ COMPLETE

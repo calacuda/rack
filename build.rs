@@ -253,6 +253,7 @@ fn ensure_vst3_sdk() -> Option<PathBuf> {
             "clone",
             "--recursive",
             "--depth=1", // Shallow clone to save time
+            // "--recurse-submodules=':(exclude)**/vst3_doc'",
             "https://github.com/steinbergmedia/vst3sdk.git",
             clone_target.to_str().unwrap(),
         ])
