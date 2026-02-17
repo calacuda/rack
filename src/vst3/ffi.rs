@@ -64,6 +64,13 @@ pub const RACK_VST3_ERROR_NOT_INITIALIZED: c_int = -4;
 pub const RACK_VST3_ERROR_LOAD_FAILED: c_int = -5;
 pub const RACK_VST3_ERROR_NOT_SUPPORTED: c_int = -6;
 
+// Match C++ struct layout
+#[repr(C)]
+pub struct StringArray {
+    pub data: *mut *mut c_char,
+    pub len: usize,
+}
+
 extern "C" {
     // ============================================================================
     // Scanner API
@@ -286,6 +293,10 @@ extern "C" {
         num_output_channels: u32,
         frames: u32,
     ) -> c_int;
+
+    pub fn rack_vst3_plugin_get_subcategories(plugin: *mut RackVST3Plugin) -> StringArray;
+
+    pub fn free_string_array(arr: StringArray);
 
     /// Get parameter count
     ///

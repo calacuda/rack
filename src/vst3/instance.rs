@@ -76,6 +76,26 @@ impl Vst3Plugin {
             })
         }
     }
+
+    pub fn get_categories(&self) -> Vec<String> {
+        unsafe {
+            let c_array = ffi::rack_vst3_plugin_get_subcategories(self.inner.as_ptr());
+
+            let mut result = Vec::with_capacity(c_array.len);
+
+            for i in 0..c_array.len {
+                let c_str = std::ffi::CStr::from_ptr(*c_array.data.add(i));
+                result.push(c_str.to_string_lossy().into_owned());
+            }
+
+            ffi::free_string_array(c_array);
+
+            println!("subcategories: {result:?}");
+
+            result
+            // Vec::new()
+        }
+    }
 }
 
 impl Drop for Vst3Plugin {
